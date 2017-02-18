@@ -1,3 +1,3 @@
-# My Awesome Book
+# Функциональное программирование на Scala
 
-This file file serves as your book's preface, a great place to describe your book's content and ideas.
+Данные записи — это конспект лекций, со [специализации Coursera](https://www.coursera.org/learn/progfun1) по функциональному программированию и Scala от его создателя Мартина Одерски. 
