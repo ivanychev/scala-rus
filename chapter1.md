@@ -1,6 +1,6 @@
 _Functional programming in Scala_
 
-# Введение в функциональное программирование
+# Введение в функциональное программирование. Функции и вычисления.
 
 ## Описание
 * **В узком смысле** функциональный язык — тот, что не содержит изменяемые переменные, присваивания и императивные управляющие структуры (Pure Lisp, XSLT, XPath, XQuery, FP, Haskell (Without I/O Monad or UnsafePerformIO))
@@ -147,4 +147,133 @@ def abs(x: Int) = if (x >= 0) x else -x
 
 * Форма `def` соответствует Call-by-Name, то есть правая часть вычисляется каждый раз при подстановке, то есть имя соответствует _выражению_.
 * Форма `val` есть Call-by-Value, его значение вычисляется в месте определения, то есть после этого имя соответствует _значению_.
-* 
+
+_Пример_:
+
+```scala
+val x = 5
+val y = square(x)
+```
+
+`y` здесь относится к `25` а не к `square(5)` или `square(x)`.
+
+_Еще один пример_:
+
+```scala
+def loop: Boolean = loop
+
+def x = loop // OK
+def y = loop // not OK
+```
+
+## Скоупы
+ 
+ _Пример. Квадратный корень. Метод Ньютона._
+
+```scala
+def sqrtIter(guess: Double, x: Double): Double =
+	if (isGoodEnough(guess, x)) guess
+	else sqrtIter(improve(guess, x), x)
+
+def improve(guess: Double, x: Double) =	(guess + x / guess) / 2def isGoodEnough(guess: Double, x: Double) =	abs(guess * guess - x) / x < 0.001
+```
+
+Функции `isGoodEnough` и `improve` нужны только для реализации `sqrtIter`. Для того чтобы делать имена недоступными для внешнего мира, можно помещать функции внутри других функций.
+
+```scala
+def sqrt(x: Double): Double = {
+
+	def sqrtIter(guess: Double, x: Double): Double =
+		if (isGoodEnough(guess, x)) guess
+		else sqrtIter(improve(guess, x), x)
+	
+	def improve(guess: Double, x: Double) =		(guess + x / guess) / 2	def isGoodEnough(guess: Double, x: Double) =		abs(guess * guess - x) / x < 0.001
+		
+	sqrtIter(1.0, x)	
+}
+``` 
+
+**Блок** ограничен `{ ... }`, он содержит последовательность определений и выражений, последнее выражение формирует возвращаемое значение блока. Блок также _является выражением_. Два простых правила для блоков:
+
+* Определения в блоке видны только внутри блока
+* Определения внутри блока переопределяют внешнее определение.
+
+```scala
+val x = 0
+def f(y: Int) = y + 1
+val result = {
+	val x = f(3)
+	x * x
+} + x  # the result is 16 + 0 = 16
+```
+
+Поэтому мы можем избавиться от лишних параметров в `sqrt`:
+
+```scala
+def sqrt(x: Double): Double = {
+
+	def sqrtIter(guess: Double): Double =
+		if (isGoodEnough(guess, x)) guess
+		else sqrtIter(improve(guess, x), x)
+	
+	def improve(guess: Double) =		(guess + x / guess) / 2	def isGoodEnough(guess: Double) =		abs(guess * guess - x) / x < 0.001
+		
+	sqrtIter(1.0, x)	
+}
+``` 
+
+## Хвостовая рекурсия
+
+Случай когда 
+
+```
+f(x_1...x_n) = B; B = ... f(v_1...v_n)
+```
+
+_Пример. Наибольший общий делитель._
+
+```scala
+def gcd(a: Int, b: Int): Int = 
+	if (b == 0) a else gcd(b, a % b)
+```
+Как оно вычисляется?
+
+* `gcd(14, 21)`
+* `if (21 == 0) 14 else gcd(21, 14 % 21)`
+* `if (false) 14 else gcd(21, 14 % 21)`
+* `gcd(21, 14 % 21)`
+* `gcd(21, 14)`
+* `if (14 == 0) 21 else gcd(14, 21 % 14)`
+* `if (false) 21 else gcd(14, 21 % 14)`
+* `gcd(14, 21 % 14)`
+* `gcd(14, 7)`
+* `if (7 == 0) 14 else gcd(7, 14 % 7)`
+* `if (false) 14 else gcd(7, 14 % 7)`
+* `gcd(7, 14 % 7)`
+* `gcd(7, 0)`
+* `...`
+* `7`
+
+_Другой пример_
+
+```scala
+def factorial(n: Int): Int = 
+	if (n == 0) 1 else n * factorial(n - 1)
+```
+
+Как вычисляется?
+
+* `factorial(5)`
+* `...`
+* `5 * factorial(4)`
+* `5 * (4 * factorial(3))`
+* `...`
+* `5 * (4 * (3 * (2 * (1 * 1))))`
+
+ В первом случае последовательность сворачиваний каждый раз приводит нас к вызову `gcd(..., ...)`, тогда как во втором случае такого не происходит. В случае факториала выражение становится все больше с каждым шагом. Это различие имеет прямое отношение к исполнению этих вызовов на компьютере. 
+ 
+ Оказывается, что если функция вызывает _себя_ в виде последнего действия, стек функции может быть использован заново. Это называется _хвостовой рекурсией_(tail recursion). Функции с хвостовой рекурсии являются итеративными, то есть являются формой `for`'а.
+ 
+ Более общее утверждение: если последним действием ффункция вызывает любую функцию, то стек может быть испольщован для обеих функций. Такие вызовы называются _хвостовыми_ (tail calls).
+
+
